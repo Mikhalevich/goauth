@@ -1,0 +1,18 @@
+version: "3"
+services:
+  web:
+    build: .
+    depends_on:
+    - dbpg
+  dbpg:
+    image: postgres
+    ports:
+    - 5432:5432
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    volumes:
+    - db-data-goauth:/var/lib/postgresql/data
+volumes:
+  db-data-goauth:
