@@ -4,13 +4,14 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"encoding/base64"
+	"errors"
 	"time"
 )
 
-type TypePassword [sha1.Size]byte
+type Password [sha1.Size]byte
 
-func (tp TypePassword) IsEmpty() bool {
-	for _, value := range tp {
+func (p Password) IsEmpty() bool {
+	for _, value := range p {
 		if value != 0 {
 			return false
 		}
@@ -48,9 +49,18 @@ type Email struct {
 type User struct {
 	ID       int
 	Name     string
-	Password TypePassword
+	Pwd      Password
 	Emails   []Email
 	Sessions []Session
+}
+
+func (u *User) Session(value string) (Session, error) {
+	for _, session := range u.Sessions {
+		if session.Value == value {
+			return session, nil
+		}
+	}
+	return Session{}, errors.New("Not found")
 }
 
 type LoginRequest struct {
@@ -68,4 +78,8 @@ type UnknownRequest struct {
 type Requester interface {
 	Request(ip string) (*UnknownRequest, error)
 	AddRequest(UnknownRequest)
+}
+
+type Userer interface {
+	UserByName(name string) (User, error)
 }
