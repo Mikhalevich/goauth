@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-const (
-	SessionExpirePeriod = 1 * 60 * 60 * 24 * 30 // sec
-)
-
 var (
 	ErrAlreadyExists = errors.New("already exists")
 	ErrNoSuchUser    = errors.New("no such user")
@@ -82,7 +78,7 @@ func (a *Authentificator) Authorize(name, password, ip string) error {
 	return nil
 }
 
-func (a *Authentificator) RegisterByPassword(name, password string) error {
+func (a *Authentificator) RegisterByName(name, password string) error {
 	_, err := a.db.UserByName(name)
 	if err == nil {
 		return ErrAlreadyExists
