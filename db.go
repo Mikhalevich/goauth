@@ -5,7 +5,12 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
+	"net/http"
 	"time"
+)
+
+var (
+	ErrNotExists = errors.New("not exist")
 )
 
 type Password [sha1.Size]byte
@@ -19,19 +24,26 @@ func (p Password) IsEmpty() bool {
 	return true
 }
 
+func NewPassword(p string) Password {
+	if p != "" {
+		return sha1.Sum([]byte(p))
+	}
+	return Password{}
+}
+
 type Session struct {
-	ID      int
+	Name    string
 	Value   string
 	Expires int64
 }
 
-func NewSession(expirePeriod int64) *Session {
+func NewSession(name string, expire int64) *Session {
 	bytes := make([]byte, 32)
 	rand.Read(bytes)
 	return &Session{
-		ID:      0,
+		Name:    name,
 		Value:   base64.URLEncoding.EncodeToString(bytes),
-		Expires: time.Now().Unix() + expirePeriod,
+		Expires: time.Now().Unix() + expire,
 	}
 }
 
@@ -40,7 +52,6 @@ func (s *Session) IsExpired() bool {
 }
 
 type Email struct {
-	ID       int
 	Email    string
 	Verified bool
 	Primary  bool
@@ -60,11 +71,10 @@ func (u *User) Session(value string) (Session, error) {
 			return session, nil
 		}
 	}
-	return Session{}, errors.New("Not found")
+	return Session{}, ErrNotExists
 }
 
 type LoginRequest struct {
-	ID   int
 	Time int64
 }
 
@@ -75,11 +85,27 @@ type UnknownRequest struct {
 	Requests []LoginRequest
 }
 
+func NewUnknownRequest(ip, url string) *UnknownRequest {
+	return &UnknownRequest{
+		IP:       ip,
+		URL:      url,
+		Requests: make([]LoginRequest, 0),
+	}
+}
+
 type Requester interface {
 	Request(ip string) (*UnknownRequest, error)
-	AddRequest(UnknownRequest)
+	AddRequest(UnknownRequest) error
+	AddLoginRequest(ID int, time int64) error
 }
 
 type Userer interface {
 	UserByName(name string) (User, error)
+	AddUser(u *User) error
+	AddSession(userID int, s Session)
+}
+
+type Sessioner interface {
+	Create() Session
+	Find(r *http.Request) (Session, error)
 }

@@ -1,68 +1,101 @@
 package goauth
 
-import "net/http"
-
-const (
-	NO_COOKIE = iota
-	STATIC_COOKIE
-	USER_NAME
+import (
+	"errors"
+	"net/http"
+	"time"
 )
 
-type cookieComparator struct {
-	cookType int
-	name     string
-}
+const (
+	SessionExpirePeriod = 1 * 60 * 60 * 24 * 30 // sec
+)
 
-func (cc *cookieComparator) compare(cookName, userName string) bool {
-	switch cc.cookType {
-	case NO_COOKIE:
-		return false
-	case STATIC_COOKIE:
-		return cookName == cc.name
-	case USER_NAME:
-		return cookName == userName
-	}
-}
-
-func newCookieComparator(ct int, cn string) *cookieComparator {
-	return &cookieComparator{
-		cookType: ct,
-		name:     cn,
-	}
-}
+var (
+	ErrAlreadyExists = errors.New("already exists")
+	ErrNoSuchUser    = errors.New("no such user")
+	ErrManyRequests  = errors.New("many requests")
+	ErrPwdNotMatch   = errors.New("passwords not match")
+)
 
 type Authentificator struct {
-	db Userer
-	cc *cookieComparator
+	db  Userer
+	req Requester
+	ses Sessioner
 }
 
-func NewAuthentificator(userDB Userer, cookType int, cookName string) *Authentificator {
+func NewAuthentificator(userDB Userer, r Requester, s Sessioner) *Authentificator {
 	return &Authentificator{
-		db: userDB,
-		cc: newCookieComparator(cookType, cookName),
+		db:  userDB,
+		req: r,
+		ses: s,
 	}
 }
 
-func (a *Authentificator) IsAuthorized(name string, cookies []*http.Cookie) bool {
-	user, err := a.db.UserByName(name)
+func (a *Authentificator) IsAuthorized(r *http.Request) bool {
+	s, err := a.ses.Find(r)
 	if err != nil {
 		return false
 	}
 
-	for _, cook := range cookies {
-		if a.cc.compare(cook.Name, name) {
-			session, err := user.Session(cook.Value)
-			if err != nil {
-				return false
-			}
-
-			if session.IsExpired() {
-				return false
-			}
-
-			return true
-		}
+	if s.IsExpired() {
+		return false
 	}
 
-	return false
+	return true
+}
+
+func (a *Authentificator) Authorize(name, password, ip string) error {
+	r, err := a.req.Request(ip)
+	if err == ErrNotExists {
+		r = NewUnknownRequest(ip, "")
+		err = a.req.AddRequest(*r)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if len(r.Requests) > 3 {
+		return ErrManyRequests
+	}
+
+	user, err := a.db.UserByName(name)
+	if err == ErrNotExists {
+		return ErrNoSuchUser
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if user.Pwd != NewPassword(password) {
+		a.req.AddLoginRequest(r.ID, time.Now().Unix())
+		return ErrPwdNotMatch
+	}
+
+	session := a.ses.Create()
+	a.db.AddSession(user.ID, session)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *Authentificator) RegisterByPassword(name, password string) error {
+	_, err := a.db.UserByName(name)
+	if err == nil {
+		return ErrAlreadyExists
+	}
+
+	if err != ErrNotExists {
+		return err
+	}
+
+	u := &User{
+		Name:     name,
+		Pwd:      NewPassword(password),
+		Sessions: []Session{a.ses.Create()},
+	}
+	return a.db.AddUser(u)
 }
