@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	ErrNotAuthorized = errors.New("not authorized")
 	ErrAlreadyExists = errors.New("already exists")
 	ErrNoSuchUser    = errors.New("no such user")
 	ErrManyRequests  = errors.New("many requests")
@@ -27,26 +28,31 @@ func NewAuthentificator(u Userer, r Requester, s Sessioner) *Authentificator {
 	}
 }
 
-func (a *Authentificator) IsAuthorized(r *http.Request) bool {
-	recSession, err := a.ses.Find(r)
+func (a *Authentificator) GetUser(r *http.Request) (User, error) {
+	reqSession, err := a.ses.Find(r)
 	if err != nil {
-		return false
+		return User{}, ErrNotAuthorized
 	}
 
-	if recSession.IsExpired() {
-		return false
+	if reqSession.IsExpired() {
+		return User{}, ErrNotAuthorized
 	}
 
-	storedSession, err := a.user.GetSession(recSession.Value)
+	user, err := a.user.GetBySession(reqSession.Value)
 	if err != nil {
-		return false
+		return User{}, ErrNotAuthorized
+	}
+
+	storedSession, err := user.Session(reqSession.Value)
+	if err != nil {
+		return User{}, ErrNotAuthorized
 	}
 
 	if storedSession.IsExpired() {
-		return false
+		return User{}, ErrNotAuthorized
 	}
 
-	return true
+	return user, nil
 }
 
 func (a *Authentificator) AuthorizeByName(name, password, ip string) error {

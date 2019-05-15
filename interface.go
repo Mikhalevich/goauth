@@ -104,7 +104,6 @@ type Userer interface {
 	GetBySession(value string) (User, error)
 	Add(u *User) error
 	AddSession(userID int, s Session)
-	GetSession(value string) (Session, error)
 }
 
 type Sessioner interface {
