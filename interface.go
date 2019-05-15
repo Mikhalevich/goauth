@@ -94,15 +94,17 @@ func NewUnknownRequest(ip, url string) *UnknownRequest {
 }
 
 type Requester interface {
-	Request(ip string) (*UnknownRequest, error)
-	AddRequest(UnknownRequest) error
-	AddLoginRequest(ID int, time int64) error
+	Get(ip string) (*UnknownRequest, error)
+	Add(UnknownRequest) error
+	AddLogin(ID int, time int64) error
 }
 
 type Userer interface {
-	UserByName(name string) (User, error)
-	AddUser(u *User) error
+	GetByName(name string) (User, error)
+	GetBySession(value string) (User, error)
+	Add(u *User) error
 	AddSession(userID int, s Session)
+	GetSession(value string) (Session, error)
 }
 
 type Sessioner interface {

@@ -28,23 +28,32 @@ func NewAuthentificator(u Userer, r Requester, s Sessioner) *Authentificator {
 }
 
 func (a *Authentificator) IsAuthorized(r *http.Request) bool {
-	s, err := a.ses.Find(r)
+	recSession, err := a.ses.Find(r)
 	if err != nil {
 		return false
 	}
 
-	if s.IsExpired() {
+	if recSession.IsExpired() {
+		return false
+	}
+
+	storedSession, err := a.user.GetSession(recSession.Value)
+	if err != nil {
+		return false
+	}
+
+	if storedSession.IsExpired() {
 		return false
 	}
 
 	return true
 }
 
-func (a *Authentificator) Authorize(name, password, ip string) error {
-	r, err := a.req.Request(ip)
+func (a *Authentificator) AuthorizeByName(name, password, ip string) error {
+	r, err := a.req.Get(ip)
 	if err == ErrNotExists {
 		r = NewUnknownRequest(ip, "")
-		err = a.req.AddRequest(*r)
+		err = a.req.Add(*r)
 	}
 
 	if err != nil {
@@ -55,7 +64,7 @@ func (a *Authentificator) Authorize(name, password, ip string) error {
 		return ErrManyRequests
 	}
 
-	user, err := a.user.UserByName(name)
+	user, err := a.user.GetByName(name)
 	if err == ErrNotExists {
 		return ErrNoSuchUser
 	}
@@ -65,7 +74,7 @@ func (a *Authentificator) Authorize(name, password, ip string) error {
 	}
 
 	if user.Pwd != NewPassword(password) {
-		a.req.AddLoginRequest(r.ID, time.Now().Unix())
+		a.req.AddLogin(r.ID, time.Now().Unix())
 		return ErrPwdNotMatch
 	}
 
@@ -79,7 +88,7 @@ func (a *Authentificator) Authorize(name, password, ip string) error {
 }
 
 func (a *Authentificator) RegisterByName(name, password string) error {
-	_, err := a.user.UserByName(name)
+	_, err := a.user.GetByName(name)
 	if err == nil {
 		return ErrAlreadyExists
 	}
@@ -93,5 +102,5 @@ func (a *Authentificator) RegisterByName(name, password string) error {
 		Pwd:      NewPassword(password),
 		Sessions: []Session{a.ses.Create()},
 	}
-	return a.user.AddUser(u)
+	return a.user.Add(u)
 }
