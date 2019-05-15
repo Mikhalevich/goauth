@@ -14,16 +14,16 @@ var (
 )
 
 type Authentificator struct {
-	db  Userer
-	req Requester
-	ses Sessioner
+	user Userer
+	req  Requester
+	ses  Sessioner
 }
 
-func NewAuthentificator(userDB Userer, r Requester, s Sessioner) *Authentificator {
+func NewAuthentificator(u Userer, r Requester, s Sessioner) *Authentificator {
 	return &Authentificator{
-		db:  userDB,
-		req: r,
-		ses: s,
+		user: u,
+		req:  r,
+		ses:  s,
 	}
 }
 
@@ -55,7 +55,7 @@ func (a *Authentificator) Authorize(name, password, ip string) error {
 		return ErrManyRequests
 	}
 
-	user, err := a.db.UserByName(name)
+	user, err := a.user.UserByName(name)
 	if err == ErrNotExists {
 		return ErrNoSuchUser
 	}
@@ -70,7 +70,7 @@ func (a *Authentificator) Authorize(name, password, ip string) error {
 	}
 
 	session := a.ses.Create()
-	a.db.AddSession(user.ID, session)
+	a.user.AddSession(user.ID, session)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (a *Authentificator) Authorize(name, password, ip string) error {
 }
 
 func (a *Authentificator) RegisterByName(name, password string) error {
-	_, err := a.db.UserByName(name)
+	_, err := a.user.UserByName(name)
 	if err == nil {
 		return ErrAlreadyExists
 	}
@@ -93,5 +93,5 @@ func (a *Authentificator) RegisterByName(name, password string) error {
 		Pwd:      NewPassword(password),
 		Sessions: []Session{a.ses.Create()},
 	}
-	return a.db.AddUser(u)
+	return a.user.AddUser(u)
 }
