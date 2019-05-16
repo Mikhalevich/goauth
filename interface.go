@@ -103,7 +103,7 @@ type Userer interface {
 	GetByName(name string) (User, error)
 	GetBySession(value string) (User, error)
 	Add(u *User) error
-	AddSession(userID int, s Session)
+	AddSession(userID int, s Session) error
 }
 
 type Sessioner interface {

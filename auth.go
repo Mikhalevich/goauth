@@ -85,7 +85,7 @@ func (a *Authentificator) AuthorizeByName(name, password, ip string) error {
 	}
 
 	session := a.ses.Create()
-	a.user.AddSession(user.ID, session)
+	err = a.user.AddSession(user.ID, session)
 	if err != nil {
 		return err
 	}
