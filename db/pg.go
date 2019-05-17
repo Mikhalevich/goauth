@@ -59,17 +59,17 @@ func NewPostgres(p PGParams) (*Postgres, error) {
 }
 
 func createSchema(db *sql.DB) error {
-	_, err := db.Exec("CREATE TABLE IF NOT EXISTS Users(id integer PRIMARY KEY, name varchar(50) UNIQUE, password varchar(100));")
+	_, err := db.Exec("CREATE TABLE IF NOT EXISTS Users(id SERIAL PRIMARY KEY, name varchar(50) UNIQUE, password varchar(100));")
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Emails(id integer PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, email varchar(100) UNIQUE, prim boolean, verified boolean);")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Emails(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, email varchar(100) UNIQUE, prim boolean, verified boolean);")
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Sessions(id integer PRIMARY KEY, userID integer REFERENCES Users(id), name varchar(100), value varchar(100) UNIQUE, expires integer);")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Sessions(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id), name varchar(100), value varchar(100) UNIQUE, expires integer);")
 	if err != nil {
 		return err
 	}
