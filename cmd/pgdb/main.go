@@ -66,7 +66,21 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	pg.Close()
+	defer pg.Close()
+
+	u1, err := pg.GetByName("first")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(u1)
+
+	u2, err := pg.GetByName("michael")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(u2)
 
 	fmt.Println("Done...")
 }

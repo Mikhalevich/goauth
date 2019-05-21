@@ -2,7 +2,6 @@ package goauth
 
 import (
 	"crypto/rand"
-	"crypto/sha1"
 	"encoding/base64"
 	"errors"
 	"net/http"
@@ -12,24 +11,6 @@ import (
 var (
 	ErrNotExists = errors.New("not exist")
 )
-
-type Password [sha1.Size]byte
-
-func (p Password) IsEmpty() bool {
-	for _, value := range p {
-		if value != 0 {
-			return false
-		}
-	}
-	return true
-}
-
-func NewPassword(p string) Password {
-	if p != "" {
-		return sha1.Sum([]byte(p))
-	}
-	return Password{}
-}
 
 type Session struct {
 	Name    string
@@ -60,7 +41,7 @@ type Email struct {
 type User struct {
 	ID       int
 	Name     string
-	Pwd      Password
+	Pwd      string
 	Emails   []Email
 	Sessions []Session
 }
@@ -100,8 +81,8 @@ type Requester interface {
 }
 
 type Userer interface {
-	GetByName(name string) (User, error)
-	GetBySession(value string) (User, error)
+	GetByName(name string) (*User, error)
+	GetBySession(value string) (*User, error)
 	Add(u *User) error
 	AddSession(userID int, s Session) error
 }
