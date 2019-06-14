@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Mikhalevich/argparser"
+	"github.com/Mikhalevich/goauth"
 	"github.com/Mikhalevich/goauth/db"
 )
 
@@ -68,6 +69,38 @@ func main() {
 	}
 	defer pg.Close()
 
+	u := &goauth.User{
+		Name: "first",
+		Pwd:  "first_pwd",
+	}
+	err = pg.Add(u)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = pg.AddEmail(u.ID, goauth.Email{
+		Email:    "first@gmail.com",
+		Verified: false,
+		Primary:  true,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	u = &goauth.User{
+		Name:     "third",
+		Pwd:      "third_pwd",
+		Emails:   []goauth.Email{goauth.Email{Email: "third@gmail.com", Verified: true, Primary: false}},
+		Sessions: []goauth.Session{goauth.Session{Name: "third_session", Value: "third_value", Expires: 42}},
+	}
+	err = pg.Add(u)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	u1, err := pg.GetByName("first")
 	if err != nil {
 		fmt.Println(err)
@@ -75,12 +108,19 @@ func main() {
 	}
 	fmt.Println(u1)
 
-	u2, err := pg.GetByName("michael")
+	u2, err := pg.GetByName("third")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	fmt.Println(u2)
+
+	u3, err := pg.GetByName("michael")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(u3)
 
 	fmt.Println("Done...")
 }

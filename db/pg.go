@@ -127,8 +127,8 @@ func (p *Postgres) sessionsByUserID(userID int) ([]goauth.Session, error) {
 	return sessions, nil
 }
 
-func (p *Postgres) GetByName(name string) (*goauth.User, error) {
-	row := p.db.QueryRow("SELECT * FROM Users WHERE name = $1", name)
+func (p *Postgres) userByQuery(query string, args ...interface{}) (*goauth.User, error) {
+	row := p.db.QueryRow(query, args...)
 
 	user := goauth.User{}
 	err := row.Scan(&user.ID, &user.Name, &user.Pwd)
@@ -154,14 +154,46 @@ func (p *Postgres) GetByName(name string) (*goauth.User, error) {
 	return &user, nil
 }
 
+func (p *Postgres) GetByName(name string) (*goauth.User, error) {
+	return p.userByQuery("SELECT * FROM Users WHERE name = $1", name)
+}
+
 func (p *Postgres) GetBySession(value string) (*goauth.User, error) {
-	return nil, nil
+	return p.userByQuery("SELECT User.* FROM Users INNER JOIN Sessions ON Users.id = Sessions.userID WHERE Sessions.id = $1", value)
+}
+
+func (p *Postgres) AddEmail(userID int, e goauth.Email) error {
+	_, err := p.db.Exec("INSERT INTO Emails(userID, email, prim, verified) VALUES($1, $2, $3, $4)", userID, e.Email, e.Primary, e.Verified)
+	return err
 }
 
 func (p *Postgres) Add(u *goauth.User) error {
+	var id int
+	err := p.db.QueryRow("INSERT INTO Users(name, password) VALUES($1, $2) RETURNING id", u.Name, u.Pwd).Scan(&id)
+	if err != nil {
+		return err
+	}
+
+	u.ID = id
+
+	for _, s := range u.Sessions {
+		err = p.AddSession(id, s)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, e := range u.Emails {
+		err := p.AddEmail(id, e)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 func (p *Postgres) AddSession(userID int, s goauth.Session) error {
-	return nil
+	_, err := p.db.Exec("INSERT INTO Sessions(userID, name, value, expires) VALUES($1, $2, $3, $4)", userID, s.Name, s.Value, s.Expires)
+	return err
 }
