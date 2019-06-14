@@ -1,7 +1,7 @@
 {
     "db": {
         "user": "postgres",
-        "pwd": "1",
+        "pwd": "123456",
         "db_name": "auth",
         "host": "localhost",
         "port": 5432,
