@@ -25,7 +25,5 @@ func WithTransaction(database *sql.DB, fn TransactionFunc) error {
 		return err
 	}
 
-	err = tx.Commit()
-
-	return err
+	return tx.Commit()
 }
