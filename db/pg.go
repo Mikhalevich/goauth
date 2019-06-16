@@ -158,8 +158,8 @@ func (p *Postgres) GetByName(name string) (*goauth.User, error) {
 	return p.userByQuery("SELECT * FROM Users WHERE name = $1", name)
 }
 
-func (p *Postgres) GetBySession(value string) (*goauth.User, error) {
-	return p.userByQuery("SELECT User.* FROM Users INNER JOIN Sessions ON Users.id = Sessions.userID WHERE Sessions.id = $1", value)
+func (p *Postgres) GetBySession(sessionName string) (*goauth.User, error) {
+	return p.userByQuery("SELECT Users.* FROM Users INNER JOIN Sessions ON Users.id = Sessions.userID WHERE Sessions.name = $1", sessionName)
 }
 
 func (p *Postgres) addEmailTx(userID int, e goauth.Email, tx Transaction) error {

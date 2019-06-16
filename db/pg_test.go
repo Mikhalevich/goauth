@@ -35,7 +35,7 @@ func BenchmarkAddUser(b *testing.B) {
 			Sessions: []goauth.Session{goauth.Session{Name: fmt.Sprintf("test_user_session_%d", i), Value: fmt.Sprintf("test_user_session_value_%d", i), Expires: int64(i)}},
 		}
 		if err := pg.Add(u); err != nil {
-			b.Fatal(err)
+			//b.Fatal(err)
 		}
 	}
 }
@@ -53,6 +53,15 @@ func BenchmarkGetUserByNameNotExisting(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		name := fmt.Sprintf("no_such_user_test_user_%d", i)
 		if _, err := pg.GetByName(name); (err != nil) && (err != goauth.ErrNotExists) {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkGetUserBySession(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sessionName := fmt.Sprintf("test_user_session_%d", i)
+		if _, err := pg.GetBySession(sessionName); (err != nil) && (err != goauth.ErrNotExists) {
 			b.Fatal(err)
 		}
 	}
