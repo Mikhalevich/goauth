@@ -76,7 +76,7 @@ func NewUnknownRequest(ip, url string) *UnknownRequest {
 
 type Requester interface {
 	Get(ip string) (*UnknownRequest, error)
-	Add(UnknownRequest) error
+	AddRequest(r *UnknownRequest) error
 	AddLogin(ID int, time int64) error
 }
 

@@ -74,6 +74,16 @@ func createSchema(db *sql.DB) error {
 		return err
 	}
 
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS UnkownRequest(id SERIAL PRIMARY KEY, ip varchar(50) UNIQUE, url varchar(256) NOT NULL);")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS LoginRequest(id SERIAL PRIMARY KEY, unknownID integer REFERENCES UnknownRequest(id), time integer NOT NULL)")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -206,4 +216,67 @@ func (p *Postgres) Add(u *goauth.User) error {
 
 		return nil
 	})
+}
+
+func (p *Postgres) Get(ip string) (*goauth.UnknownRequest, error) {
+	row := p.db.QueryRow("SELECT id, ip, url FROM UnknownRequest WHERE ip = $1", ip)
+
+	ur := goauth.UnknownRequest{}
+	err := row.Scan(&ur.ID, &ur.IP, &ur.URL)
+
+	if err == sql.ErrNoRows {
+		return nil, goauth.ErrNotExists
+	} else if err != nil {
+		return nil, err
+	}
+
+	rows, err := p.db.Query("SELECT time FROM LoginRequest WHERE unknownID = $1", ur.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	requests := []goauth.LoginRequest{}
+	for rows.Next() {
+		r := goauth.LoginRequest{}
+		if err := rows.Scan(&r.Time); err != nil {
+			return nil, err
+		}
+		requests = append(requests, r)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	ur.Requests = requests
+
+	return &ur, nil
+}
+
+func (p *Postgres) AddRequest(ur *goauth.UnknownRequest) error {
+	return WithTransaction(p.db, func(tx Transaction) error {
+		err := tx.QueryRow("INSERT INTO UnknownRequest(ip, url) VALUES($1, $2) RETURNING id", ur.Name, ur.Pwd).Scan(&ur.ID)
+		if err != nil {
+			return err
+		}
+
+		for _, r := range r.Requests {
+			err = p.addSessionTx(ur.ID, r.Time, tx)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+func (p *Postgres) addLoginTx(ID int, time int64, tx Transaction) {
+	_, err := tx.Exec("INSERT INTO LoginRequest(unknownID, time) VALUES($1, $2)", ID, time)
+	return err
+}
+
+func (p *Postgres) AddLogin(ID int, time int64) error {
+	return addLoginTx(ID, time, p.db)
 }

@@ -59,7 +59,7 @@ func (a *Authentificator) AuthorizeByName(name, password, ip string) error {
 	r, err := a.req.Get(ip)
 	if err == ErrNotExists {
 		r = NewUnknownRequest(ip, "")
-		err = a.req.Add(*r)
+		err = a.req.AddRequest(r)
 	}
 
 	if err != nil {
