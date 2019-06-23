@@ -1,12 +1,14 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
+
+	"github.com/Mikhalevich/goauth"
 
 	"github.com/Mikhalevich/argparser"
-	_ "github.com/lib/pq"
+	"github.com/Mikhalevich/goauth/db"
 )
 
 type DBParams struct {
@@ -55,26 +57,8 @@ func loadParams() (*Params, error) {
 	return params.(*Params), err
 }
 
-func checkDB(connStr string) error {
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	row := db.QueryRow("select version()")
-
-	version := ""
-	err = row.Scan(&version)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("******************************************")
-	fmt.Println(version)
-	fmt.Println("******************************************")
-
-	return nil
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "root handler...")
 }
 
 func main() {
@@ -84,10 +68,18 @@ func main() {
 		return
 	}
 
-	err = checkDB(params.DB.connectionString())
+	pg, err := db.NewPostgres(db.PGParams{DBName: params.DB.DBName, User: params.DB.User, Password: params.DB.Password, Host: params.DB.Host, Port: params.DB.Port, SSLMode: params.DB.SSLMode})
 	if err != nil {
 		fmt.Println(err)
+		return
+	}
+	defer pg.Close()
+
+	a := goauth.NewAuthentificator(pg, pg, goauth.NewCookieSession("test", 5*60))
+	if a == nil {
+		fmt.Println(a)
 	}
 
-	fmt.Println(params)
+	http.HandleFunc("/", rootHandler)
+	http.ListenAndServe(":8080", nil)
 }
