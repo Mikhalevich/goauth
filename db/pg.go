@@ -74,12 +74,12 @@ func createSchema(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS UnkownRequest(id SERIAL PRIMARY KEY, ip varchar(50) UNIQUE, url varchar(256) NOT NULL);")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS UnknownRequest(id SERIAL PRIMARY KEY, ip varchar(50) UNIQUE, url varchar(256) NOT NULL);")
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS LoginRequest(id SERIAL PRIMARY KEY, unknownID integer REFERENCES UnknownRequest(id), time integer NOT NULL)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS LoginRequest(id SERIAL PRIMARY KEY, unknownID integer REFERENCES UnknownRequest(id) ON DELETE CASCADE ON UPDATE CASCADE, time integer NOT NULL)")
 	if err != nil {
 		return err
 	}
@@ -256,13 +256,13 @@ func (p *Postgres) Get(ip string) (*goauth.UnknownRequest, error) {
 
 func (p *Postgres) AddRequest(ur *goauth.UnknownRequest) error {
 	return WithTransaction(p.db, func(tx Transaction) error {
-		err := tx.QueryRow("INSERT INTO UnknownRequest(ip, url) VALUES($1, $2) RETURNING id", ur.Name, ur.Pwd).Scan(&ur.ID)
+		err := tx.QueryRow("INSERT INTO UnknownRequest(ip, url) VALUES($1, $2) RETURNING id", ur.IP, ur.URL).Scan(&ur.ID)
 		if err != nil {
 			return err
 		}
 
-		for _, r := range r.Requests {
-			err = p.addSessionTx(ur.ID, r.Time, tx)
+		for _, r := range ur.Requests {
+			err = p.addLoginTx(ur.ID, r.Time, tx)
 			if err != nil {
 				return err
 			}
@@ -272,11 +272,11 @@ func (p *Postgres) AddRequest(ur *goauth.UnknownRequest) error {
 	})
 }
 
-func (p *Postgres) addLoginTx(ID int, time int64, tx Transaction) {
+func (p *Postgres) addLoginTx(ID int, time int64, tx Transaction) error {
 	_, err := tx.Exec("INSERT INTO LoginRequest(unknownID, time) VALUES($1, $2)", ID, time)
 	return err
 }
 
 func (p *Postgres) AddLogin(ID int, time int64) error {
-	return addLoginTx(ID, time, p.db)
+	return p.addLoginTx(ID, time, p.db)
 }
