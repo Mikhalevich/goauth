@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Mikhalevich/goauth"
-
 	"github.com/Mikhalevich/argparser"
+	"github.com/Mikhalevich/goauth"
 	"github.com/Mikhalevich/goauth/db"
 )
 
