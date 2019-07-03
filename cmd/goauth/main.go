@@ -150,6 +150,18 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func checkAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := auth.GetUser(r)
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	params, err := loadParams()
 	if err != nil {
@@ -166,7 +178,7 @@ func main() {
 
 	auth = goauth.NewAuthentificator(pg, pg, goauth.NewCookieSession("test", 5*60))
 
-	http.HandleFunc("/", rootHandler)
+	http.Handle("/", checkAuth(http.HandlerFunc(rootHandler)))
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/reg", registerHandler)
 	http.ListenAndServe(":8080", nil)
