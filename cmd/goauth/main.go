@@ -3,11 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/Mikhalevich/argparser"
 	"github.com/Mikhalevich/goauth"
 	"github.com/Mikhalevich/goauth/db"
+)
+
+var (
+	auth *goauth.Authentificator
 )
 
 type DBParams struct {
@@ -60,6 +66,90 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "root handler...")
 }
 
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	userInfo := NewTemplatePassword()
+	renderTemplate := true
+	defer func() {
+		if renderTemplate {
+			if err := userInfo.Execute(w); err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+
+	if r.Method != http.MethodPost {
+		return
+	}
+
+	userInfo.Name = r.FormValue("name")
+	userInfo.Password = r.FormValue("password")
+
+	if userInfo.Name == "" {
+		userInfo.AddError("name", "Please specify storage name to login")
+	}
+
+	if userInfo.Password == "" {
+		userInfo.AddError("password", "Please enter password to login")
+	}
+
+	if len(userInfo.Errors) > 0 {
+		return
+	}
+
+	err, session := auth.AuthorizeByName(userInfo.Name, userInfo.Password, r.RemoteAddr)
+	if err != nil {
+		userInfo.AddError("name", err.Error())
+		return
+	}
+
+	renderTemplate = false
+	cookie := http.Cookie{Name: session.Name, Value: session.Value, Path: "/", Expires: time.Unix(session.Expires, 0), HttpOnly: true}
+	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func registerHandler(w http.ResponseWriter, r *http.Request) {
+	userInfo := NewTemplateRegister()
+	renderTemplate := true
+	defer func() {
+		if renderTemplate {
+			if err := userInfo.Execute(w); err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+
+	if r.Method != http.MethodPost {
+		return
+	}
+
+	userInfo.Name = r.FormValue("name")
+	userInfo.Password = r.FormValue("password")
+
+	if userInfo.Name == "" {
+		userInfo.AddError("name", "Please specify storage name to login")
+	}
+
+	if userInfo.Password == "" {
+		userInfo.AddError("password", "Please enter password to login")
+	}
+
+	if len(userInfo.Errors) > 0 {
+		return
+	}
+
+	err, session := auth.RegisterByName(userInfo.Name, userInfo.Password)
+	if err != nil {
+		userInfo.AddError("name", err.Error())
+		return
+	}
+
+	renderTemplate = false
+	cookie := http.Cookie{Name: session.Name, Value: session.Value, Path: "/", Expires: time.Unix(session.Expires, 0), HttpOnly: true}
+	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 func main() {
 	params, err := loadParams()
 	if err != nil {
@@ -74,11 +164,10 @@ func main() {
 	}
 	defer pg.Close()
 
-	a := goauth.NewAuthentificator(pg, pg, goauth.NewCookieSession("test", 5*60))
-	if a == nil {
-		fmt.Println(a)
-	}
+	auth = goauth.NewAuthentificator(pg, pg, goauth.NewCookieSession("test", 5*60))
 
 	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/reg", registerHandler)
 	http.ListenAndServe(":8080", nil)
 }
