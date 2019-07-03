@@ -230,7 +230,7 @@ func (p *Postgres) Get(ip string, limitRequests int) (*goauth.UnknownRequest, er
 		return nil, err
 	}
 
-	rows, err := p.db.Query("SELECT time FROM LoginRequest WHERE unknownID = $1 LIMIT $2", ur.ID, limitRequests)
+	rows, err := p.db.Query("SELECT time FROM LoginRequest WHERE unknownID = $1 ORDER BY time desc LIMIT $2", ur.ID, limitRequests)
 	if err != nil {
 		return nil, err
 	}

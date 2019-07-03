@@ -62,7 +62,7 @@ func (a *Authentificator) AuthorizeByName(name, password, ip string) (error, *Se
 		return err, nil
 	}
 
-	if r.RequestsAfter(time.Now().Add(-time.Minute).Unix()) >= 3 {
+	if r.RequestsAfter(time.Now().Add(-60*time.Second).Unix()) >= 3 {
 		return ErrManyRequests, nil
 	}
 
