@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -63,7 +64,8 @@ func loadParams() (*Params, error) {
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "root handler...")
+	user := r.Context().Value("user").(*goauth.User)
+	fmt.Fprintf(w, "authentificated with user: %s", user.Name)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -152,11 +154,13 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 
 func checkAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := auth.GetUser(r)
+		user, err := auth.GetUser(r)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
+
+		r = r.WithContext(context.WithValue(r.Context(), "user", user))
 
 		next.ServeHTTP(w, r)
 	})
@@ -169,6 +173,7 @@ func main() {
 		return
 	}
 
+	time.Sleep(time.Millisecond * 1000)
 	pg, err := db.NewPostgres(db.PGParams{DBName: params.DB.DBName, User: params.DB.User, Password: params.DB.Password, Host: params.DB.Host, Port: params.DB.Port, SSLMode: params.DB.SSLMode})
 	if err != nil {
 		fmt.Println(err)
