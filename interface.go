@@ -66,6 +66,16 @@ type UnknownRequest struct {
 	Requests []LoginRequest
 }
 
+func (ur *UnknownRequest) RequestsAfter(ut int64) int {
+	count := 0
+	for _, r := range ur.Requests {
+		if r.Time > ut {
+			count++
+		}
+	}
+	return count
+}
+
 func NewUnknownRequest(ip, url string) *UnknownRequest {
 	return &UnknownRequest{
 		IP:       ip,
@@ -75,7 +85,7 @@ func NewUnknownRequest(ip, url string) *UnknownRequest {
 }
 
 type Requester interface {
-	Get(ip string) (*UnknownRequest, error)
+	Get(ip string, limitRequests int) (*UnknownRequest, error)
 	AddRequest(r *UnknownRequest) error
 	AddLogin(ID int, time int64) error
 }

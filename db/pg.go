@@ -218,7 +218,7 @@ func (p *Postgres) Add(u *goauth.User) error {
 	})
 }
 
-func (p *Postgres) Get(ip string) (*goauth.UnknownRequest, error) {
+func (p *Postgres) Get(ip string, limitRequests int) (*goauth.UnknownRequest, error) {
 	row := p.db.QueryRow("SELECT id, ip, url FROM UnknownRequest WHERE ip = $1", ip)
 
 	ur := goauth.UnknownRequest{}
@@ -230,7 +230,7 @@ func (p *Postgres) Get(ip string) (*goauth.UnknownRequest, error) {
 		return nil, err
 	}
 
-	rows, err := p.db.Query("SELECT time FROM LoginRequest WHERE unknownID = $1", ur.ID)
+	rows, err := p.db.Query("SELECT time FROM LoginRequest WHERE unknownID = $1 LIMIT $2", ur.ID, limitRequests)
 	if err != nil {
 		return nil, err
 	}

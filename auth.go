@@ -52,7 +52,7 @@ func (a *Authentificator) GetUser(r *http.Request) (*User, error) {
 }
 
 func (a *Authentificator) AuthorizeByName(name, password, ip string) (error, *Session) {
-	r, err := a.req.Get(ip)
+	r, err := a.req.Get(ip, 3)
 	if err == ErrNotExists {
 		r = NewUnknownRequest(ip, "")
 		err = a.req.AddRequest(r)
@@ -62,7 +62,7 @@ func (a *Authentificator) AuthorizeByName(name, password, ip string) (error, *Se
 		return err, nil
 	}
 
-	if len(r.Requests) > 3 {
+	if r.RequestsAfter(time.Now().Add(-time.Minute).Unix()) >= 3 {
 		return ErrManyRequests, nil
 	}
 
