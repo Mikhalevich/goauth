@@ -34,10 +34,6 @@ func (a *Authentificator) GetUser(r *http.Request) (*User, error) {
 		return nil, ErrNotAuthorized
 	}
 
-	if reqSession.IsExpired() {
-		return nil, ErrNotAuthorized
-	}
-
 	user, err := a.user.GetBySession(reqSession.Value)
 	if err != nil {
 		return nil, ErrNotAuthorized
