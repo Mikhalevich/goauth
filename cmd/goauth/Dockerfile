@@ -1,8 +1,8 @@
 FROM golang:latest as builder
 
-RUN go get github.com/Mikhalevich/argparser
-RUN go get github.com/Mikhalevich/goauth
-RUN go get github.com/lib/pq
+RUN go get -u github.com/Mikhalevich/argparser
+RUN go get -u github.com/Mikhalevich/goauth
+RUN go get -u github.com/lib/pq
 
 WORKDIR /go/src/github.com/Mikhalevich/goauth/cmd/goauth
 COPY . .
