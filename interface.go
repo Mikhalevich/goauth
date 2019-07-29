@@ -33,9 +33,10 @@ func (s *Session) IsExpired() bool {
 }
 
 type Email struct {
-	Email    string
-	Verified bool
-	Primary  bool
+	Email            string
+	Verified         bool
+	Primary          bool
+	VerificationCode string
 }
 
 type User struct {
@@ -53,6 +54,16 @@ func (u *User) Session(value string) (Session, error) {
 		}
 	}
 	return Session{}, ErrNotExists
+}
+
+func (u *User) Email(address string) (Email, error) {
+	for _, e := range u.Emails {
+		if e.Email == address {
+			return e, nil
+		}
+	}
+
+	return Email{}, ErrNotExists
 }
 
 type LoginRequest struct {
@@ -92,12 +103,18 @@ type Requester interface {
 
 type Userer interface {
 	GetByName(name string) (*User, error)
+	GetByEmail(email string) (*User, error)
 	GetBySession(value string) (*User, error)
 	Add(u *User) error
+	AddEmail(userID int, email Email) error
 	AddSession(userID int, s Session) error
 }
 
 type Sessioner interface {
 	Create() Session
 	Find(r *http.Request) (Session, error)
+}
+
+type Emailer interface {
+	Sent(emailTo string, contentType string, body string) error
 }

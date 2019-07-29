@@ -64,7 +64,7 @@ func createSchema(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Emails(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, email varchar(100) UNIQUE, prim boolean, verified boolean);")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Emails(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, email varchar(100) UNIQUE, prim boolean, verified boolean, verification_code varchar(10));")
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (p *Postgres) Close() error {
 }
 
 func (p *Postgres) emailsByUserID(userID int) ([]goauth.Email, error) {
-	rows, err := p.db.Query("SELECT email, verified, prim FROM Emails WHERE userID = $1", userID)
+	rows, err := p.db.Query("SELECT email, prim, verified, verification_coee FROM Emails WHERE userID = $1", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (p *Postgres) emailsByUserID(userID int) ([]goauth.Email, error) {
 	emails := []goauth.Email{}
 	for rows.Next() {
 		e := goauth.Email{}
-		if err := rows.Scan(&e.Email, &e.Verified, &e.Primary); err != nil {
+		if err := rows.Scan(&e.Email, &e.Primary, &e.Verified, &e.VerificationCode); err != nil {
 			return nil, err
 		}
 		emails = append(emails, e)
@@ -168,12 +168,16 @@ func (p *Postgres) GetByName(name string) (*goauth.User, error) {
 	return p.userByQuery("SELECT * FROM Users WHERE name = $1", name)
 }
 
+func (p *Postgres) GetByEmail(email string) (*goauth.User, error) {
+	return p.userByQuery("SELECT * FROM Users WHERE Users.id = (SELECT userID FROM Emails WHERE email = $1)", email)
+}
+
 func (p *Postgres) GetBySession(sessionValue string) (*goauth.User, error) {
 	return p.userByQuery("SELECT Users.* FROM Users INNER JOIN Sessions ON Users.id = Sessions.userID WHERE Sessions.value = $1", sessionValue)
 }
 
 func (p *Postgres) addEmailTx(userID int, e goauth.Email, tx Transaction) error {
-	_, err := tx.Exec("INSERT INTO Emails(userID, email, prim, verified) VALUES($1, $2, $3, $4)", userID, e.Email, e.Primary, e.Verified)
+	_, err := tx.Exec("INSERT INTO Emails(userID, email, prim, verified, verification_code) VALUES($1, $2, $3, $4, $5)", userID, e.Email, e.Primary, e.Verified, e.VerificationCode)
 	return err
 }
 
