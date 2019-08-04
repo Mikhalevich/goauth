@@ -64,7 +64,7 @@ func createSchema(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Emails(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, email varchar(100) UNIQUE, prim boolean, verified boolean, verification_code varchar(10));")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Emails(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, email varchar(100) UNIQUE, prim boolean, verified boolean, verification_code varchar(50));")
 	if err != nil {
 		return err
 	}

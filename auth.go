@@ -139,7 +139,7 @@ func (a *Authentificator) ValidateEmail(email string, code string) error {
 		return err
 	}
 
-	if e.VerificationCode != code {
+	if e.VerificationCode != html.UnescapeString(code) {
 		return ErrVerificationCodeNotMatch
 	}
 
