@@ -177,7 +177,9 @@ func (p *Postgres) GetBySession(sessionValue string) (*goauth.User, error) {
 }
 
 func (p *Postgres) addEmailTx(userID int, e goauth.Email, tx Transaction) error {
-	_, err := tx.Exec("INSERT INTO Emails(userID, email, prim, verified, verification_code) VALUES($1, $2, $3, $4, $5)", userID, e.Email, e.Primary, e.Verified, e.VerificationCode)
+	_, err := tx.Exec("INSERT INTO Emails(userID, email, prim, verified, verification_code) VALUES($1, $2, $3, $4, $5)"+
+		"ON CONFLICT(userID) DO UPDATE SET email = excluded.email, prim = excluded.prim, verified = excluded.verified, verification_code = excluded.verification_code",
+		userID, e.Email, e.Primary, e.Verified, e.VerificationCode)
 	return err
 }
 
