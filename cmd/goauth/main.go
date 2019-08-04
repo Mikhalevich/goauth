@@ -152,6 +152,59 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func verifyEmailHandler(w http.ResponseWriter, r *http.Request) {
+	userInfo := NewTemplateRegister()
+	renderTemplate := true
+	defer func() {
+		if renderTemplate {
+			if err := userInfo.Execute(w); err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+
+	if r.Method != http.MethodPost {
+		return
+	}
+
+	user := r.Context().Value("user").(*goauth.User)
+
+	userInfo.Name = r.FormValue("name")
+
+	if userInfo.Name == "" {
+		userInfo.AddError("name", "Please specify email for verification")
+	}
+
+	if len(userInfo.Errors) > 0 {
+		return
+	}
+
+	e := goauth.Email{
+		Email: userInfo.Name,
+	}
+
+	err := auth.SendEmailVerificationCode("http://127.0.0.1:8080/verify_email_response", user.ID, e)
+	if err != nil {
+		userInfo.AddError("common", err.Error())
+		return
+	}
+
+	renderTemplate = false
+}
+
+func verifyEmailResponseHandler(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	code := r.FormValue("code")
+
+	err := auth.ValidateEmail(email, code)
+	if err != nil {
+		fmt.Fprintf(w, "error occured: %s", err)
+		return
+	}
+
+	fmt.Fprintf(w, "email %s verified with code %s", email, code)
+}
+
 func checkAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := auth.GetUser(r)
@@ -181,10 +234,18 @@ func main() {
 	}
 	defer pg.Close()
 
-	auth = goauth.NewAuthentificator(pg, pg, goauth.NewCookieSession("test", 5*60))
+	es := &goauth.EmailSender{
+		Host:     "smtp.gmail.com",
+		Port:     "587",
+		From:     "noreplymgoauth@gmail.com",
+		Password: "mgoauth123",
+	}
+	auth = goauth.NewAuthentificator(pg, pg, goauth.NewCookieSession("test", 5*60), es)
 
 	http.Handle("/", checkAuth(http.HandlerFunc(rootHandler)))
 	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/reg", registerHandler)
+	http.HandleFunc("/register", registerHandler)
+	http.Handle("/verify_email", checkAuth(http.HandlerFunc(verifyEmailHandler)))
+	http.HandleFunc("/verify_email_response", verifyEmailResponseHandler)
 	http.ListenAndServe(":8080", nil)
 }
