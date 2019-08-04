@@ -92,7 +92,7 @@ func (p *Postgres) Close() error {
 }
 
 func (p *Postgres) emailsByUserID(userID int) ([]goauth.Email, error) {
-	rows, err := p.db.Query("SELECT email, prim, verified, verification_coee FROM Emails WHERE userID = $1", userID)
+	rows, err := p.db.Query("SELECT email, prim, verified, verification_code FROM Emails WHERE userID = $1", userID)
 	if err != nil {
 		return nil, err
 	}
