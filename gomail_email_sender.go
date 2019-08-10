@@ -1,6 +1,10 @@
 package goauth
 
-import gomail "gopkg.in/gomail.v2"
+import (
+	"crypto/tls"
+
+	gomail "gopkg.in/gomail.v2"
+)
 
 type GomailSender struct {
 	Host     string
@@ -17,5 +21,6 @@ func (gms *GomailSender) Sent(emailTo string, contentType string, body string) e
 	m.SetBody(contentType, body)
 
 	d := gomail.NewPlainDialer(gms.Host, gms.Port, gms.From, gms.Password)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	return d.DialAndSend(m)
 }

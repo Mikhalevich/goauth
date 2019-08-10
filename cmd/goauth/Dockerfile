@@ -3,6 +3,7 @@ FROM golang:latest as builder
 RUN go get -u github.com/Mikhalevich/argparser
 RUN go get -u github.com/Mikhalevich/goauth
 RUN go get -u github.com/lib/pq
+RUN go get -u gopkg.in/gomail.v2
 
 WORKDIR /go/src/github.com/Mikhalevich/goauth/cmd/goauth
 COPY . .
