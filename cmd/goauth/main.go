@@ -234,9 +234,9 @@ func main() {
 	}
 	defer pg.Close()
 
-	es := &goauth.EmailSender{
+	es := &goauth.GomailSender{
 		Host:     "smtp.gmail.com",
-		Port:     "587",
+		Port:     587,
 		From:     "noreplymgoauth@gmail.com",
 		Password: "mgoauth123",
 	}
