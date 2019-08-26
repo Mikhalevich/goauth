@@ -11,6 +11,8 @@ import (
 	"github.com/Mikhalevich/argparser"
 	"github.com/Mikhalevich/goauth"
 	"github.com/Mikhalevich/goauth/db"
+	"github.com/Mikhalevich/goauth/email"
+	"github.com/Mikhalevich/goauth/session"
 )
 
 var (
@@ -234,13 +236,13 @@ func main() {
 	}
 	defer pg.Close()
 
-	es := &goauth.GomailSender{
+	es := &email.GomailSender{
 		Host:     "smtp.gmail.com",
 		Port:     587,
 		From:     "noreplymgoauth@gmail.com",
 		Password: "mgoauth123",
 	}
-	auth = goauth.NewAuthentificator(pg, pg, goauth.NewCookieSession("test", 5*60), es)
+	auth = goauth.NewAuthentificator(pg, pg, session.NewCookieSession("test", 5*60), es)
 
 	http.Handle("/", checkAuth(http.HandlerFunc(rootHandler)))
 	http.HandleFunc("/login", loginHandler)

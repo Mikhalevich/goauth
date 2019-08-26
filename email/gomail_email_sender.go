@@ -1,4 +1,4 @@
-package goauth
+package email
 
 import (
 	"crypto/tls"

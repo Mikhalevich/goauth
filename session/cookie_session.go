@@ -1,6 +1,10 @@
-package goauth
+package session
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/Mikhalevich/goauth"
+)
 
 type CookieSession struct {
 	Name         string
@@ -14,22 +18,22 @@ func NewCookieSession(name string, period int64) *CookieSession {
 	}
 }
 
-func (cs *CookieSession) Create() Session {
-	return *NewSession(cs.Name, cs.ExpirePeriod)
+func (cs *CookieSession) Create() goauth.Session {
+	return *goauth.NewSession(cs.Name, cs.ExpirePeriod)
 }
 
-func (cs *CookieSession) Find(r *http.Request) (Session, error) {
+func (cs *CookieSession) Find(r *http.Request) (goauth.Session, error) {
 	for _, cook := range r.Cookies() {
 		if cook.Name != cs.Name {
 			continue
 		}
 
-		return Session{
+		return goauth.Session{
 			Name:    cs.Name,
 			Value:   cook.Value,
 			Expires: cook.Expires.Unix(),
 		}, nil
 	}
 
-	return Session{}, ErrNotExists
+	return goauth.Session{}, goauth.ErrNotExists
 }
