@@ -1,24 +1,24 @@
 package goauth
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"time"
 )
 
 type Session struct {
 	Name    string
 	Value   string
+	Created int64
 	Expires int64
 }
 
-func NewSession(name string, expire int64) *Session {
-	bytes := make([]byte, 32)
-	rand.Read(bytes)
+func NewSession(name string, value string, expirePeriod int64) *Session {
+	ct := time.Now().Unix()
+
 	return &Session{
 		Name:    name,
-		Value:   base64.URLEncoding.EncodeToString(bytes),
-		Expires: time.Now().Unix() + expire,
+		Value:   value,
+		Created: ct,
+		Expires: ct + expirePeriod,
 	}
 }
 

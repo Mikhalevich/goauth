@@ -1,6 +1,8 @@
 package session
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 
 	"github.com/Mikhalevich/goauth"
@@ -19,7 +21,9 @@ func NewCookieSession(name string, period int64) *CookieSession {
 }
 
 func (cs *CookieSession) Create() goauth.Session {
-	return *goauth.NewSession(cs.Name, cs.ExpirePeriod)
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
+	return *goauth.NewSession(cs.Name, base64.URLEncoding.EncodeToString(bytes), cs.ExpirePeriod)
 }
 
 func (cs *CookieSession) Find(r *http.Request) (goauth.Session, error) {

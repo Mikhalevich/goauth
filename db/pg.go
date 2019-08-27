@@ -69,7 +69,7 @@ func createSchema(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Sessions(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, name varchar(100), value varchar(100) UNIQUE, expires integer);")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Sessions(id SERIAL PRIMARY KEY, userID integer REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE, name varchar(100), value text UNIQUE, created integer, expires integer);")
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (p *Postgres) emailsByUserID(userID int) ([]goauth.Email, error) {
 }
 
 func (p *Postgres) sessionsByUserID(userID int) ([]goauth.Session, error) {
-	rows, err := p.db.Query("SELECT name, value, expires FROM Sessions WHERE userID = $1", userID)
+	rows, err := p.db.Query("SELECT name, value, created, expires FROM Sessions WHERE userID = $1", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (p *Postgres) sessionsByUserID(userID int) ([]goauth.Session, error) {
 	sessions := []goauth.Session{}
 	for rows.Next() {
 		s := goauth.Session{}
-		if err := rows.Scan(&s.Name, &s.Value, &s.Expires); err != nil {
+		if err := rows.Scan(&s.Name, &s.Value, &s.Created, &s.Expires); err != nil {
 			return nil, err
 		}
 		sessions = append(sessions, s)
@@ -188,7 +188,7 @@ func (p *Postgres) AddEmail(userID int, e goauth.Email) error {
 }
 
 func (p *Postgres) addSessionTx(userID int, s goauth.Session, tx Transaction) error {
-	_, err := tx.Exec("INSERT INTO Sessions(userID, name, value, expires) VALUES($1, $2, $3, $4)", userID, s.Name, s.Value, s.Expires)
+	_, err := tx.Exec("INSERT INTO Sessions(userID, name, value, created, expires) VALUES($1, $2, $3, $4, $5)", userID, s.Name, s.Value, s.Created, s.Expires)
 	return err
 }
 
