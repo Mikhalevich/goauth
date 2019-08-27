@@ -1,12 +1,7 @@
 package goauth
 
 import (
-	"errors"
 	"net/http"
-)
-
-var (
-	ErrNotExists = errors.New("not exist")
 )
 
 type Requester interface {
