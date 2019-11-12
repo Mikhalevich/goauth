@@ -58,7 +58,7 @@ func (a *Authentificator) GetUser(r *http.Request) (*User, error) {
 	return user, nil
 }
 
-func (a *Authentificator) AuthorizeByName(name, password, ip string) (error, *Session) {
+func (a *Authentificator) AuthorizeByName(name, password, ip string) (*Session, error) {
 	r, err := a.req.Get(ip, 3)
 	if err == ErrNotExists {
 		r = NewUnknownRequest(ip, "")
@@ -66,39 +66,39 @@ func (a *Authentificator) AuthorizeByName(name, password, ip string) (error, *Se
 	}
 
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	if r.RequestsAfter(time.Now().Add(-60*time.Second).Unix()) >= 3 {
-		return ErrManyRequests, nil
+		return nil, ErrManyRequests
 	}
 
 	user, err := a.user.GetByName(name)
 	if err == ErrNotExists {
-		return ErrNoSuchUser, nil
+		return nil, ErrNoSuchUser
 	}
 
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	if user.Pwd != password {
 		a.req.AddLogin(r.ID, time.Now().Unix())
-		return ErrPwdNotMatch, nil
+		return nil, ErrPwdNotMatch
 	}
 
 	session := a.ses.Create()
-	return a.user.AddSession(user.ID, session), &session
+	return &session, a.user.AddSession(user.ID, session)
 }
 
-func (a *Authentificator) RegisterByName(name, password string) (error, *Session) {
+func (a *Authentificator) RegisterByName(name, password string) (*Session, error) {
 	_, err := a.user.GetByName(name)
 	if err == nil {
-		return ErrAlreadyExists, nil
+		return nil, ErrAlreadyExists
 	}
 
 	if err != ErrNotExists {
-		return err, nil
+		return nil, err
 	}
 
 	session := a.ses.Create()
@@ -108,7 +108,7 @@ func (a *Authentificator) RegisterByName(name, password string) (error, *Session
 		Pwd:      password,
 		Sessions: []Session{session},
 	}
-	return a.user.Add(u), &session
+	return &session, a.user.Add(u)
 }
 
 func generateRandomID(size int) string {
