@@ -22,7 +22,23 @@ type Postgres struct {
 	db *sql.DB
 }
 
-func NewPostgres(p PGParams) (*Postgres, error) {
+func NewPostgres(connectionStr string) (*Postgres, error) {
+	pgDB, err := sql.Open("postgres", connectionStr)
+	if err != nil {
+		return nil, err
+	}
+
+	err = createSchema(pgDB)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Postgres{
+		db: pgDB,
+	}, nil
+}
+
+func NewPostgresWithParams(p PGParams) (*Postgres, error) {
 	if p.DBName == "" {
 		return nil, errors.New("empty database name")
 	}
@@ -43,19 +59,7 @@ func NewPostgres(p PGParams) (*Postgres, error) {
 		p.SSLMode = "disable"
 	}
 
-	pgDB, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=%s", p.User, p.Password, p.DBName, p.Host, p.Port, p.SSLMode))
-	if err != nil {
-		return nil, err
-	}
-
-	err = createSchema(pgDB)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Postgres{
-		db: pgDB,
-	}, nil
+	return NewPostgres(fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=%s", p.User, p.Password, p.DBName, p.Host, p.Port, p.SSLMode))
 }
 
 func createSchema(db *sql.DB) error {

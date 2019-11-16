@@ -229,7 +229,7 @@ func main() {
 	}
 
 	time.Sleep(time.Millisecond * 1000)
-	pg, err := db.NewPostgres(db.PGParams{DBName: params.DB.DBName, User: params.DB.User, Password: params.DB.Password, Host: params.DB.Host, Port: params.DB.Port, SSLMode: params.DB.SSLMode})
+	pg, err := db.NewPostgresWithParams(db.PGParams{DBName: params.DB.DBName, User: params.DB.User, Password: params.DB.Password, Host: params.DB.Host, Port: params.DB.Port, SSLMode: params.DB.SSLMode})
 	if err != nil {
 		fmt.Println(err)
 		return
