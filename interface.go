@@ -4,6 +4,14 @@ import (
 	"net/http"
 )
 
+type Authentifier interface {
+	GetUser(r *http.Request) (*User, error)
+	AuthorizeByName(name, password, ip string) (*Session, error)
+	RegisterByName(name, password string) (*Session, error)
+	SendEmailVerificationCode(callbackURL string, userID int, email Email)
+	ValidateEmail(email string, code string) error
+}
+
 type Requester interface {
 	Get(ip string, limitRequests int) (*UnknownRequest, error)
 	AddRequest(r *UnknownRequest) error
