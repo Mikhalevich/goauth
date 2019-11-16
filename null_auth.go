@@ -5,6 +5,10 @@ import "net/http"
 type NullAuthentificator struct {
 }
 
+func NewNullAuthentificator() *NullAuthentificator {
+	return &NullAuthentificator{}
+}
+
 func (n *NullAuthentificator) GetUser(r *http.Request) (*User, error) {
 	return nil, nil
 }
