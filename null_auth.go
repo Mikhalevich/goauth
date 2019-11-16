@@ -21,8 +21,8 @@ func (n *NullAuthentificator) RegisterByName(name, password string) (*Session, e
 	return nil, nil
 }
 
-func (n *NullAuthentificator) SendEmailVerificationCode(callbackURL string, userID int, email Email) {
-	return
+func (n *NullAuthentificator) SendEmailVerificationCode(callbackURL string, userID int, email Email) error {
+	return nil
 }
 
 func (n *NullAuthentificator) ValidateEmail(email string, code string) error {

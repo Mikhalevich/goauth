@@ -8,7 +8,7 @@ type Authentifier interface {
 	GetUser(r *http.Request) (*User, error)
 	AuthorizeByName(name, password, ip string) (*Session, error)
 	RegisterByName(name, password string) (*Session, error)
-	SendEmailVerificationCode(callbackURL string, userID int, email Email)
+	SendEmailVerificationCode(callbackURL string, userID int, email Email) error
 	ValidateEmail(email string, code string) error
 }
 
